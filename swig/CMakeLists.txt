@@ -3,6 +3,7 @@ include(${SWIG_USE_FILE})
 
 find_package(PythonLibs)
 include_directories(${PYTHON_INCLUDE_PATH})
+include_directories(/Users/zihao/.virtualenvs/py3/lib/python3.6/site-packages/numpy/core/include)
 
 set(CMAKE_SWIG_FLAGS "")
 

@@ -3,6 +3,7 @@
 #include <unistd.h>
 
 #include "DeepCapture.h"
+#include "MacDisplayCapture.h"
 
 #import <CoreGraphics/CGDisplayStream.h>
 #import <Cocoa/Cocoa.h>
@@ -165,7 +166,7 @@ void stop()
 
 int main(int argc, char* argv[])
 {
-  DeepCapture *dc = new DeepCapture();
+  DeepCapture *dc = create_display_capture();
   dc->init();
   dc->start();
   dc->stop();

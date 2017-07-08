@@ -1,29 +1,17 @@
 #include "DeepCapture.h"
 
-#include <iostream>
-using namespace std;
+#ifdef _WIN32
+  #error "Windows is not supported yet"
+#elif __APPLE__
+  #include "MacDisplayCapture.h"
 
-DeepCapture::DeepCapture()
-{
-  cout << "con" << endl;
-}
+  DeepCapture* create_display_capture()
+  {
+    return new MacDisplayCapture();
+  }
+#elif __linux__
+  #error "Windows is not supported yet"
+#else
+  #error "Unknown compiler"
+#endif
 
-DeepCapture::~DeepCapture()
-{
-  cout << "decon" << endl;
-}
-
-void DeepCapture::init()
-{
-  cout << "init" << endl;
-}
-
-void DeepCapture::start()
-{
-  cout << "start" << endl;
-}
-
-void DeepCapture::stop()
-{
-  cout << "stop" << endl;
-}

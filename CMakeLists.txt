@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.8)
 
-project(deep-capture)
+project(DeepCapture)
 
 find_library(AUDIOUNIT AudioUnit)
 find_library(COCOA Cocoa)
@@ -27,7 +27,7 @@ file(GLOB SOURCES
   src/*.mm
 )
 
-add_library(${PROJECT_NAME}
+add_library(${PROJECT_NAME} SHARED
   ${SOURCES}
   ${HEADERS})
 
@@ -38,16 +38,24 @@ target_link_libraries(${PROJECT_NAME}
   ${COREFOUNDATION}
   ${IOSURF})
 
+add_library(${PROJECT_NAME}Static STATIC
+  ${SOURCES}
+  ${HEADERS})
+
+target_link_libraries(${PROJECT_NAME}Static
+  ${AUDIOUNIT}
+  ${COCOA}
+  ${COREAUDIO}
+  ${COREFOUNDATION}
+  ${IOSURF})
+
 install(TARGETS ${PROJECT_NAME}
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib)
 
+install(TARGETS ${PROJECT_NAME}Static
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib)
+
 add_subdirectory(swig)
-add_subdirectory(example)
-
-add_custom_target(uninstall
-  COMMAND
-)
-
-
-
+add_subdirectory(examples)
