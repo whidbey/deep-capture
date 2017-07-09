@@ -14,6 +14,7 @@ Capturing video data in numpy format at high frame rate
 cd lib/python
 pip install -e .
 ```
+pre-req: cmake, numpy, swig, python3
 
 ## Usage
 See examples/one-frame/main.py
@@ -33,6 +34,26 @@ plt.imshow(frame[...,[2,1,0,3]]) #BGRA -> RGBA
 plt.show()
 
 dc.stop()
+```
+
+## Running Examples
+
+```bash
+cd build
+make run-one-frame
+
+cd build
+make run-yolo-screen
+```
+
+or without make
+
+```bash
+cd examples/one-frame
+python main.py
+
+cd examples/yolo-screen
+python main.py
 ```
 
 ## Note
