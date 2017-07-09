@@ -17,3 +17,4 @@ swig_link_libraries(${PYTHON_NAME} ${PYTHON_LIBRARIES} ${PROJECT_NAME})
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/_${PYTHON_NAME}.so DESTINATION lib/python)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${PYTHON_NAME}.py DESTINATION lib/python)
+install(FILES setup.py DESTINATION lib/python)

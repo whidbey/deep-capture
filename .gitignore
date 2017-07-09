@@ -2,7 +2,8 @@
 # =  Custom  =
 # ============
 
-nothing
+bin/mac-main
+examples/yolo-screen/YOLO_tiny.ckpt
 
 # ===========
 # =  CMake  =

@@ -5,16 +5,13 @@ import time
 import sys
 import matplotlib.pyplot as plt
 
+DEBUG = False
+
 class YOLO_TF:
-    tofile_img = 'log/output.jpg'
-    tofile_txt = 'log/output.txt'
-    filewrite_img = False
-    filewrite_txt = False
-    disp_console = False
     weights_file = 'YOLO_tiny.ckpt'
     alpha = 0.1
-    threshold = 0.1
-    iou_threshold = 0.5
+    threshold = 0.05
+    iou_threshold = 0.2
     num_class = 20
     num_box = 2
     grid_size = 7
@@ -23,25 +20,10 @@ class YOLO_TF:
     w_img = 640
     h_img = 480
 
-    def __init__(self,argvs = []):
-        self.argv_parser(argvs)
+    def __init__(self):
         self.build_networks()
-        # if self.fromfile is not None: self.detect_from_file(self.fromfile)
-
-    def argv_parser(self,argvs):
-        for i in range(1,len(argvs),2):
-            if argvs[i] == '-fromfile' : self.fromfile = argvs[i+1]
-            if argvs[i] == '-tofile_img' : self.tofile_img = argvs[i+1] ; self.filewrite_img = True
-            if argvs[i] == '-tofile_txt' : self.tofile_txt = argvs[i+1] ; self.filewrite_txt = True
-            if argvs[i] == '-imshow' :
-                if argvs[i+1] == '1' :self.imshow = True
-                else : self.imshow = False
-            if argvs[i] == '-disp_console' :
-                if argvs[i+1] == '1' :self.disp_console = True
-                else : self.disp_console = False
 
     def build_networks(self):
-        if self.disp_console : print("Building YOLO_tiny graph...")
         self.x = tf.placeholder('float32',[None,448,448,3])
         self.conv_1 = self.conv_layer(1,self.x,16,3,1)
         self.pool_2 = self.pooling_layer(2,self.conv_1,2,2)
@@ -66,7 +48,8 @@ class YOLO_TF:
         self.sess.run(tf.global_variables_initializer())
         self.saver = tf.train.Saver()
         self.saver.restore(self.sess,self.weights_file)
-        if self.disp_console : print("Loading complete!" + '\n')
+
+        if DEBUG: print("Loading complete!" + '\n')
 
     def conv_layer(self,idx,inputs,filters,size,stride):
         channels = inputs.get_shape()[3]
@@ -79,11 +62,14 @@ class YOLO_TF:
 
         conv = tf.nn.conv2d(inputs_pad, weight, strides=[1, stride, stride, 1], padding='VALID',name=str(idx)+'_conv')
         conv_biased = tf.add(conv,biases,name=str(idx)+'_conv_biased')
-        if self.disp_console : print('  Layer  %d : Type = Conv, Size = %d * %d, Stride = %d, Filters = %d, Input channels = %d' % (idx,size,size,stride,filters,int(channels)))
+
+        if DEBUG: print('  Layer  %d : Type = Conv, Size = %d * %d, Stride = %d, Filters = %d, Input channels = %d' % (idx,size,size,stride,filters,int(channels)))
+
         return tf.maximum(self.alpha*conv_biased,conv_biased,name=str(idx)+'_leaky_relu')
 
     def pooling_layer(self,idx,inputs,size,stride):
-        if self.disp_console : print('  Layer  %d : Type = Pool, Size = %d * %d, Stride = %d' % (idx,size,size,stride))
+        if DEBUG: print('  Layer  %d : Type = Pool, Size = %d * %d, Stride = %d' % (idx,size,size,stride))
+
         return tf.nn.max_pool(inputs, ksize=[1, size, size, 1],strides=[1, stride, stride, 1], padding='SAME',name=str(idx)+'_pool')
 
     def fc_layer(self,idx,inputs,hiddens,flat = False,linear = False):
@@ -97,7 +83,7 @@ class YOLO_TF:
             inputs_processed = inputs
         weight = tf.Variable(tf.truncated_normal([dim,hiddens], stddev=0.1))
         biases = tf.Variable(tf.constant(0.1, shape=[hiddens]))
-        if self.disp_console : print('  Layer  %d : Type = Full, Hidden = %d, Input dimension = %d, Flat = %d, Activation = %d' % (idx,hiddens,int(dim),int(flat),1-int(linear)))
+        if DEBUG : print('  Layer  %d : Type = Full, Hidden = %d, Input dimension = %d, Flat = %d, Activation = %d' % (idx,hiddens,int(dim),int(flat),1-int(linear)))
         if linear : return tf.add(tf.matmul(inputs_processed,weight),biases,name=str(idx)+'_fc')
         ip = tf.add(tf.matmul(inputs_processed,weight),biases)
         return tf.maximum(self.alpha*ip,ip,name=str(idx)+'_fc')
@@ -114,32 +100,15 @@ class YOLO_TF:
 
         result = self.interpret_output(net_output[0])
         strtime = str(time.time()-s)
-        if self.disp_console : print('Elapsed time : ' + strtime + ' secs' + '\n')
+        if DEBUG : print('Elapsed time : ' + strtime + ' secs' + '\n')
 
         return result
 
     def detect_from_file(self,filename):
-        if self.disp_console : print('Detect from ' + filename)
+        if self.DEBUG : print('Detect from ' + filename)
         img = cv2.imread(filename)
         img_RGB = cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
-        #img = misc.imread(filename)
-        self.detect_from_cvmat(img_RGB)
-
-    def detect_from_crop_sample(self):
-        self.w_img = 640
-        self.h_img = 420
-        f = np.array(open('person_crop.txt','r').readlines(),dtype='float32')
-        inputs = np.zeros((1,448,448,3),dtype='float32')
-        for c in range(3):
-            for y in range(448):
-                for x in range(448):
-                    inputs[0,y,x,c] = f[c*448*448+y*448+x]
-
-        in_dict = {self.x: inputs}
-        net_output = self.sess.run(self.fc_19,feed_dict=in_dict)
-        self.boxes, self.probs = self.interpret_output(net_output[0])
-        img = cv2.imread('person.jpg')
-        self.show_results(self.boxes,img)
+        return self.detect_from_cvmat(img_RGB)
 
     def interpret_output(self,output):
         probs = np.zeros((7,7,2,20))
@@ -193,27 +162,18 @@ class YOLO_TF:
 
     def show_results(self,img,results):
         img_cp = img.copy()
-        if self.filewrite_txt :
-            ftxt = open(self.tofile_txt,'w')
+
         for i in range(len(results)):
             x = int(results[i][1])
             y = int(results[i][2])
             w = int(results[i][3])//2
             h = int(results[i][4])//2
-            if self.disp_console : print('  class : ' + results[i][0] + ' , [x,y,w,h]=[' + str(x) + ',' + str(y) + ',' + str(int(results[i][3])) + ',' + str(int(results[i][4]))+'], Confidence = ' + str(results[i][5]))
+            if DEBUG : print('  class : ' + results[i][0] + ' , [x,y,w,h]=[' + str(x) + ',' + str(y) + ',' + str(int(results[i][3])) + ',' + str(int(results[i][4]))+'], Confidence = ' + str(results[i][5]))
 
             cv2.rectangle(img_cp,(x-w,y-h),(x+w,y+h),(0,255,0),2)
             cv2.rectangle(img_cp,(x-w,y-h-20),(x+w,y-h),(125,125,125),-1)
             cv2.putText(img_cp,results[i][0] + ' : %.2f' % results[i][5],(x-w+5,y-h-7),cv2.FONT_HERSHEY_SIMPLEX,0.5,(0,0,0),1)
 
-            if self.filewrite_txt :
-                ftxt.write(results[i][0] + ',' + str(x) + ',' + str(y) + ',' + str(w) + ',' + str(h)+',' + str(results[i][5]) + '\n')
-        if self.filewrite_img :
-            if self.disp_console : print('  image file writed : ' + self.tofile_img)
-            cv2.imwrite(self.tofile_img,img_cp)
-        if self.filewrite_txt :
-            if self.disp_console : print('  txt file writed : ' + self.tofile_txt)
-            ftxt.close()
         return img_cp
 
     def iou(self,box1,box2):

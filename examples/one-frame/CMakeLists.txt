@@ -1,4 +1,4 @@
-set(EXECUTABLE yolo-screen)
+set(EXECUTABLE one-frame)
 
 add_custom_target(run-${EXECUTABLE}
   COMMAND python main.py
